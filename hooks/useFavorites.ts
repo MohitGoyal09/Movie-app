@@ -19,7 +19,7 @@ export function useFavorites() {
   }, []);
 
   const loadFavorites = async () => { 
-    setLoading(true); // Set loading state while fetching
+    setLoading(true); 
     try {
       const storedFavorites = await AsyncStorage.getItem(FAVORITES_KEY);
       if (storedFavorites) {
@@ -28,7 +28,7 @@ export function useFavorites() {
     } catch (error) {
       console.error('Error loading favorites:', error);
     } finally {
-      setLoading(false); // Reset loading state after fetching
+      setLoading(false); 
     }
   };
 
@@ -43,7 +43,7 @@ export function useFavorites() {
     const newFavorites = favorites.filter(movie => movie.imdbID !== imdbID);
     await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
     setFavorites(newFavorites);
-    loadFavorites(); // Trigger reload after removing
+    loadFavorites(); 
   }, [favorites]);
 
   const isFavorite = useCallback((imdbID: string) => {
