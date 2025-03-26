@@ -20,12 +20,9 @@ function debounce<F extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<F>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
   return function (this: ThisParameterType<F>, ...args: Parameters<F>) {
     const context = this;
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-    }
+    if (timeoutId !== null) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       func.apply(context, args);
     }, wait);
@@ -46,12 +43,12 @@ interface Movie {
   Actors?: string;
   Plot?: string;
   BoxOffice?: string;
-  Type?: string; 
+  Type?: string;
 }
 
 const OMDB_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_OMDB_API_KEY;
 const ITEMS_PER_PAGE = 10;
-const DEBOUNCE_DELAY = 500; 
+const DEBOUNCE_DELAY = 500;
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,45 +59,37 @@ export default function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState<number>(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
 
   const router = useRouter();
+
   const { addFavorite, removeFavorite, isFavorite, loadFavorites } =
     useFavorites();
 
-    const fetchMoviesFromApi = useCallback(
+  const fetchMoviesFromApi = useCallback(
     async (query: string, pageNumber: number = 1, append: boolean = false) => {
-     
       if (!query.trim()) {
-        setMovies([]); 
+        setMovies([]);
         setError(null);
-        setHasMore(false); 
+        setHasMore(false);
         setTotalResults(0);
         setLoadingInitial(false);
         setLoadingMore(false);
-        setPage(1); 
+        setPage(1);
         return;
       }
 
-      
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoadingInitial(true); 
-        setPage(1); 
-        setHasMore(true); 
-        
-      }
-      setError(null);
+      if (append) setLoadingMore(true);
+      else setLoadingInitial(true);
+      setError(null); // Clear error before fetch
 
       try {
         const response = await fetch(
           `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(
             query
-          )}&type=movie&page=${pageNumber}` 
+          )}&type=movie&page=${pageNumber}`
         );
         const data = await response.json();
-
         console.log(
           `API Response (Query: ${query}, Page: ${pageNumber}):`,
           data
@@ -109,19 +98,14 @@ export default function SearchScreen() {
         if (data.Response === 'True' && data.Search) {
           const newMovies = data.Search;
           const fetchedTotalResults = parseInt(data.totalResults, 10);
-
           setMovies((prevMovies) =>
             append ? [...prevMovies, ...newMovies] : newMovies
           );
           setTotalResults(fetchedTotalResults);
-          setHasMore(pageNumber * ITEMS_PER_PAGE < fetchedTotalResults); 
+          setHasMore(pageNumber * ITEMS_PER_PAGE < fetchedTotalResults); // Correctly check if more pages exist
         } else {
-          
           setError(data.Error || 'No movies found.');
-          if (!append) {
-            setMovies([]); 
-            setTotalResults(0);
-          }
+          if (!append) setMovies([]); // Clear only if first page failed
           setHasMore(false);
         }
       } catch (err) {
@@ -134,18 +118,18 @@ export default function SearchScreen() {
         setLoadingMore(false);
       }
     },
-    [] 
+    [OMDB_API_KEY]
   );
 
-    const debouncedSearchRef = useRef(
+  const debouncedSearchRef = useRef(
     debounce((query: string) => {
-      
       fetchMoviesFromApi(query, 1, false);
     }, DEBOUNCE_DELAY)
   );
 
-    const fetchDefaultMovies = useCallback(async () => {
-    if (defaultMovies.length > 0 || loadingInitial) return; 
+  const fetchDefaultMovies = useCallback(async () => {
+    if (defaultMovies.length > 0 || loadingInitial) return;
+    console.log('Fetching default movies...');
     setLoadingInitial(true);
     setError(null);
     try {
@@ -154,74 +138,61 @@ export default function SearchScreen() {
       );
       const data = await response.json();
       if (data.Response === 'True' && data.Search) {
-        setDefaultMovies(data.Search.slice(0, ITEMS_PER_PAGE)); 
+        setDefaultMovies(data.Search.slice(0, ITEMS_PER_PAGE));
       } else {
         console.warn('Could not fetch default movies:', data.Error);
       }
     } catch (error) {
       console.error('Error fetching default movies:', error);
-      
     } finally {
       setLoadingInitial(false);
     }
-  }, [loadingInitial, defaultMovies.length]); 
+  }, [OMDB_API_KEY, defaultMovies.length, loadingInitial]);
 
-    useEffect(() => {
+  useEffect(() => {
     fetchDefaultMovies();
-    loadFavorites(); 
-  }, [fetchDefaultMovies, loadFavorites]); 
+  }, [fetchDefaultMovies]);
 
-    const handleSearchChange = (text: string) => {
+  const handleSearchChange = (text: string) => {
     setSearchQuery(text);
-   
     debouncedSearchRef.current(text);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
-    
     debouncedSearchRef.current('');
   };
 
   const loadMore = () => {
-    
     if (!loadingMore && !loadingInitial && hasMore && searchQuery.trim()) {
       const nextPage = page + 1;
       console.log('Loading page:', nextPage);
       setPage(nextPage);
-      
       fetchMoviesFromApi(searchQuery, nextPage, true);
     }
   };
 
   const toggleFavorite = (movie: Movie) => {
-   
     const favoriteData: FavoriteMovie = {
       imdbID: movie.imdbID,
       Title: movie.Title,
       Year: movie.Year,
       Poster: movie.Poster,
     };
-
-    if (isFavorite(movie.imdbID)) {
-      removeFavorite(movie.imdbID);
-    } else {
-      addFavorite(favoriteData);
-    }
-  
+    if (isFavorite(movie.imdbID)) removeFavorite(movie.imdbID);
+    else addFavorite(favoriteData);
   };
 
-    const renderMovieItem = ({ item }: { item: Movie }) => {
+  const renderMovieItem = ({ item }: { item: Movie }) => {
     const posterUrl =
       item.Poster && item.Poster !== 'N/A'
         ? item.Poster
         : 'https://via.placeholder.com/100x150';
     const favorite = isFavorite(item.imdbID);
-
     return (
       <TouchableOpacity
         style={styles.movieItem}
-        onPress={() => router.push(`/movie/${item.imdbID}`)} 
+        onPress={() => router.push(`/movie/${item.imdbID}`)}
       >
         <Image
           source={{ uri: posterUrl }}
@@ -250,7 +221,6 @@ export default function SearchScreen() {
   };
 
   const renderFooter = () => {
-    
     if (!loadingMore) return null;
     return (
       <View style={styles.footer}>
@@ -260,21 +230,19 @@ export default function SearchScreen() {
   };
 
   const displayData = searchQuery.trim() ? movies : defaultMovies;
-
-  
   const showInitialLoader = loadingInitial && displayData.length === 0;
-  const showEmptyState =
+  const showEmptySearch =
     !loadingInitial &&
     !loadingMore &&
     movies.length === 0 &&
     !!searchQuery.trim();
-  const showDefaultEmptyState =
+  const showDefaultInfo =
     !loadingInitial &&
     !loadingMore &&
-    defaultMovies.length === 0 &&
-    !searchQuery.trim();
-  const showErrorState =
-    error && !loadingInitial && !loadingMore && movies.length === 0; 
+    !searchQuery.trim() &&
+    defaultMovies.length === 0;
+  const showError =
+    error && !loadingInitial && !loadingMore && movies.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -285,7 +253,7 @@ export default function SearchScreen() {
           placeholder="Search movies by title..."
           placeholderTextColor="#888"
           value={searchQuery}
-          onChangeText={handleSearchChange} 
+          onChangeText={handleSearchChange}
           returnKeyType="search"
           autoCapitalize="none"
           autoCorrect={false}
@@ -297,11 +265,9 @@ export default function SearchScreen() {
         )}
       </View>
 
-     
-
       {showInitialLoader ? (
         <ActivityIndicator style={styles.loader} size="large" color="#E50914" />
-      ) : showErrorState ? (
+      ) : showError ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
@@ -309,20 +275,19 @@ export default function SearchScreen() {
         <FlatList
           data={displayData}
           renderItem={renderMovieItem}
-          keyExtractor={(item, index) => `${item.imdbID}-${index}`} 
+          keyExtractor={(item, index) => `${item.imdbID}-${index}`}
           contentContainerStyle={styles.movieListContainer}
           ListEmptyComponent={
-            showEmptyState ? (
+            showEmptySearch ? (
               <Text style={styles.emptyText}>
                 No movies found for "{searchQuery}"
               </Text>
-            ) : showDefaultEmptyState ? (
-             
+            ) : showDefaultInfo ? (
               <Text style={styles.emptyText}>Search for movies to begin!</Text>
             ) : null
           }
           onEndReached={loadMore}
-          onEndReachedThreshold={0.5} 
+          onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
           keyboardShouldPersistTaps="handled"
         />
@@ -351,7 +316,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-   
     fontSize: 16,
     color: '#333',
   },
@@ -360,7 +324,7 @@ const styles = StyleSheet.create({
   },
   movieListContainer: {
     padding: 16,
-    paddingBottom: 32, 
+    paddingBottom: 32,
   },
   movieItem: {
     flexDirection: 'row',
@@ -369,7 +333,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, 
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     overflow: 'hidden',
@@ -377,7 +341,7 @@ const styles = StyleSheet.create({
   poster: {
     width: 80,
     height: 120,
-    backgroundColor: '#e0e0e0', 
+    backgroundColor: '#e0e0e0',
   },
   movieInfo: {
     flex: 1,
@@ -386,32 +350,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    
-    fontWeight: '600', 
-    fontSize: 15, 
+    fontWeight: '600',
+    fontSize: 15,
     marginBottom: 4,
     color: '#333',
   },
   year: {
-    
     fontSize: 13,
     color: '#666',
   },
   favoriteButton: {
-    paddingHorizontal: 12, 
+    paddingHorizontal: 12,
     paddingVertical: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loader: {
-    marginTop: 50, 
+    marginTop: 50,
   },
   emptyText: {
     textAlign: 'center',
-   
     fontSize: 16,
     color: '#666',
-    marginTop: 50, 
+    marginTop: 50,
   },
   errorContainer: {
     flex: 1,
@@ -420,7 +381,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-   
     fontWeight: '600',
     fontSize: 17,
     color: '#D8000C',
@@ -430,5 +390,4 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: 'center',
   },
- 
 });
