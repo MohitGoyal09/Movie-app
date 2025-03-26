@@ -9,22 +9,22 @@ module.exports = {
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
     },
     web: {
       bundler: 'metro',
       output: 'single',
-      favicon: './assets/images/favicon.png'
+      favicon: './assets/images/favicon.png',
     },
     plugins: ['expo-router'],
     experiments: {
-      typedRoutes: true
+      typedRoutes: true,
     },
     extra: {
       EXPO_PUBLIC_OMDB_API_KEY: process.env.EXPO_PUBLIC_OMDB_API_KEY,
       eas: {
-        projectId: "38660b36-798f-471c-ab2b-42349e732ea1"
-      }
-    }
-  }
+        projectId: '78b69e07-364d-428b-acf8-6554f849c8ee',
+      },
+    },
+  },
 };
