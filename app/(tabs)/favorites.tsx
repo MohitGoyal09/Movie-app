@@ -1,4 +1,6 @@
 import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity } from 'react-native';
+import LoadingState from '@/utils/LoadingState';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
@@ -9,23 +11,18 @@ export default function FavoritesScreen() {
   const { favorites, loading, removeFavorite } = useFavorites();
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.loadingText}>Loading favorites...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingState />;
   }
 
   if (favorites.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.title}>No Favorites Yet</Text>
-          <Text style={styles.subtitle}>Movies you save will appear here</Text>
-        </View>
-      </SafeAreaView>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>No Favorites Yet</Text>
+        <Text style={styles.subtitle}>Movies you save will appear here</Text>
+      </View>
+    </SafeAreaView>
+
     );
   }
 

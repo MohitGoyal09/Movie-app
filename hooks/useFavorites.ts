@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 const FAVORITES_KEY = '@movie_favorites';
+export interface FavoriteMovie {
+  imdbID: string;
+  Title: string;
+  Year: string;
+  Poster: string;
+}
 
 export interface FavoriteMovie {
   imdbID: string;
@@ -19,7 +26,7 @@ export function useFavorites() {
   }, []);
 
   const loadFavorites = async () => { 
-    setLoading(true); 
+    setLoading(true);
     try {
       const storedFavorites = await AsyncStorage.getItem(FAVORITES_KEY);
       if (storedFavorites) {
@@ -36,14 +43,14 @@ export function useFavorites() {
     const newFavorites = [...favorites, movie];
     await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
     setFavorites(newFavorites);
-    loadFavorites(); // Trigger reload after adding
+   
   }, [favorites]);
 
   const removeFavorite = useCallback(async (imdbID: string) => {
     const newFavorites = favorites.filter(movie => movie.imdbID !== imdbID);
     await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
     setFavorites(newFavorites);
-    loadFavorites(); 
+    
   }, [favorites]);
 
   const isFavorite = useCallback((imdbID: string) => {
