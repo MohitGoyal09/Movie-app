@@ -1,7 +1,7 @@
 module.exports = {
   expo: {
-    name: 'bolt-expo-nativewind',
-    slug: 'bolt-expo-nativewind',
+    name: 'movie-app',
+    slug: 'movie-app',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
@@ -21,7 +21,10 @@ module.exports = {
       typedRoutes: true
     },
     extra: {
-      EXPO_PUBLIC_OMDB_API_KEY: process.env.EXPO_PUBLIC_OMDB_API_KEY
+      EXPO_PUBLIC_OMDB_API_KEY: process.env.EXPO_PUBLIC_OMDB_API_KEY,
+      eas: {
+        projectId: "38660b36-798f-471c-ab2b-42349e732ea1"
+      }
     }
   }
 };
